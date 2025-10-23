@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrimeInsight - Database Approach to Crime Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Crime tape animation */
+        .crime-tape {
+            position: absolute;
+            height: 40px;
+            background: repeating-linear-gradient(
+                45deg,
+                #ffeb3b,
+                #ffeb3b 20px,
+                #000 20px,
+                #000 40px
+            );
+            width: 100%;
+            z-index: 1;
+            border-top: 2px solid rgba(255, 0, 0, 0.58);
+            border-bottom: 2px solid rgba(255, 0, 0, 0.59);
+        }
+
+        .crime-tape.top {
+            top: 0;
+            animation: slideRight 3s linear infinite;
+        }
+
+        .crime-tape.bottom {
+            bottom: 0;
+            animation: slideLeft 3s linear infinite;
+        }
+
+        @keyframes slideRight {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(0); }
+        }
+
+        @keyframes slideLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100px); }
+        }
+
+        .header {
+            position: relative;
+            text-align: center;
+            padding: 80px 0 60px;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
+            margin-bottom: 40px;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 98px,
+                    #ff0000 100px,
+                    #ff0000 102px
+                ),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 98px,
+                    #ffeb3b 100px,
+                    #ffeb3b 102px
+                );
+            opacity: 0.1;
+            z-index: 1;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .header h1 {
+            font-size: 4.5em;
+            margin-bottom: 15px;
+            font-weight: 900;
+            text-shadow: 
+                3px 3px 0px #ff0000,
+                6px 6px 0px #000000;
+            color: #ffffff;
+            letter-spacing: 2px;
+        }
+
+        .header .subtitle {
+            font-size: 1.8em;
+            margin-bottom: 40px;
+            color: #ffeb3b;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .team-info {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #ffeb3b;
+            box-shadow: 
+                0 0 30px rgba(255, 235, 59, 0.3),
+                inset 0 0 30px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .team-info::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #ffeb3b, #ff0000, #ffeb3b, #ff0000);
+            z-index: -1;
+            border-radius: 15px;
+        }
+
+        .team-info h3 {
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-size: 1.5em;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .team-member {
+            display: inline-block;
+            margin: 8px 15px;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 1.1em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 2px solid rgba(255, 0, 0, 0.58);
+            box-shadow: 
+                0 0 40px rgba(255, 0, 0, 0.2),
+                inset 0 0 40px rgba(255, 235, 59, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #ff0000, #ffeb3b, #ff0000);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .card h2 {
+            color: #ffeb3b;
+            margin-bottom: 25px;
+            font-size: 2.5em;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            border-bottom: 3px solid #ff0000;
+            padding-bottom: 15px;
+        }
+
+        .card h3 {
+            color: #ffffff;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
+
+        .card p {
+            color: #ffffff;
+            font-size: 1.1em;
+            line-height: 1.8;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .grid-item {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #ffeb3b;
+            box-shadow: 
+                0 10px 30px rgba(255, 0, 0, 0.3),
+                inset 0 0 20px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .grid-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 20px,
+                    rgba(255, 235, 59, 0.1) 20px,
+                    rgba(255, 235, 59, 0.1) 40px
+                );
+            pointer-events: none;
+        }
+
+        .grid-item h4 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #ffeb3b;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .grid-item ul {
+            list-style: none;
+        }
+
+        .grid-item li {
+            margin-bottom: 8px;
+            font-size: 1.1em;
+            font-weight: 500;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .grid-item li::before {
+            content: '⚠️';
+            position: absolute;
+            left: 0;
+            color: #ffeb3b;
+        }
+
+        .list-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .list-item {
+            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 5px solid #ffeb3b;
+            border-right: 5px solid #ff0000;
+            color: #ffffff;
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .list-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 235, 59, 0.2);
+        }
+
+        .dashboard-section {
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.58) 0%, #000000 50%, #ffeb3b 100%);
+            color: #ffffff;
+            padding: 50px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            text-align: center;
+            border: 3px solid #ffffff;
+            box-shadow: 
+                0 0 50px rgba(255, 0, 0, 0.3),
+                inset 0 0 50px rgba(0,0,0,0.3);
+        }
+
+        .dashboard-section h2 {
+            color: #ffffff;
+            font-size: 2.8em;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+        }
+
+        .dashboard-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%);
+            color: #000000;
+            padding: 20px 40px;
+            text-decoration: none;
+            border-radius: 30px;
+            margin: 20px;
+            font-weight: 800;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+            border: 3px solid #ffffff;
+            box-shadow: 0 5px 20px rgba(255, 235, 59, 0.3);
+        }
+
+        .dashboard-link:hover {
+            background: linear-gradient(135deg, #ffffff 0%, #ffeb3b 100%);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 235, 59, 0.5);
+        }
+
+        .ppt-download-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);
+            color: #ffffff;
+            padding: 20px 40px;
+            text-decoration: none;
+            border-radius: 30px;
+            margin: 20px;
+            font-weight: 800;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+            border: 3px solid #ffffff;
+            box-shadow: 0 5px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .ppt-download-link:hover {
+            background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255, 107, 107, 0.5);
+        }
+
+        .insights-section {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: #ffffff;
+            padding: 50px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            border: 2px solid #ff0000;
+            box-shadow: 
+                0 0 40px rgba(255, 0, 0, 0.2),
+                inset 0 0 40px rgba(255, 235, 59, 0.1);
+        }
+
+        .insights-section h2 {
+            color: #ffeb3b;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .insights-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .insight-item {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #ffeb3b;
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(255, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .insight-item::before {
+            content: '🔍';
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.2em;
+        }
+
+        .insight-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(255, 235, 59, 0.4);
+        }
+
+        .prevention-section {
+            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+            color: #ffffff;
+            padding: 50px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            border: 2px solid #ffeb3b;
+            box-shadow: 0 0 40px rgba(255, 235, 59, 0.2);
+        }
+
+        .prevention-section h2 {
+            color: #ffeb3b;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .government-measures {
+            background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
+            color: #ffffff;
+            padding: 50px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 40px rgba(255, 0, 0, 0.3);
+        }
+
+        .government-measures h2 {
+            color: #ffffff;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .resources-section {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            color: #ffffff;
+            padding: 50px;
+            border-radius: 20px;
+            margin-bottom: 40px;
+            border: 2px solid #ff0000;
+            box-shadow: 0 0 40px rgba(255, 0, 0, 0.2);
+        }
+
+        .resources-section h2 {
+            color: #ffeb3b;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 800;
+        }
+
+        .links-section {
+            background: linear-gradient(135deg, #ff0000 0%, #000000 50%, #ffeb3b 100%);
+            color: #ffffff;
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.3);
+        }
+
+        .links-section h2 {
+            color: #ffffff;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+
+        .project-link {
+            display: inline-block;
+            background: linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%);
+            color: #000000;
+            padding: 18px 35px;
+            text-decoration: none;
+            border-radius: 25px;
+            margin: 15px;
+            font-weight: 800;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            border: 2px solid #ffffff;
+            box-shadow: 0 5px 20px rgba(255, 235, 59, 0.3);
+        }
+
+        .project-link:hover {
+            background: linear-gradient(135deg, #ffffff 0%, #ffeb3b 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(255, 235, 59, 0.5);
+        }
+
+        .concepts-used {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .concept-badge {
+            background: linear-gradient(135deg, #ff0000 0%, #cc0000 100%);
+            color: #ffffff;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-weight: 800;
+            font-size: 1.2em;
+            margin: 10px;
+            border: 2px solid #ffeb3b;
+            box-shadow: 0 5px 20px rgba(255, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .concept-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(255, 235, 59, 0.4);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 3em;
+            }
+            
+            .header .subtitle {
+                font-size: 1.4em;
+            }
+            
+            .team-member {
+                display: block;
+                margin: 15px 0;
+            }
+            
+            .concepts-used {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .insights-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-link,
+            .ppt-download-link {
+                display: block;
+                margin: 10px auto;
+                width: 80%;
+                text-align: center;
+            }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #000000;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #ff0000 0%, #ffeb3b 100%);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #ffeb3b 0%, #ff0000 100%);
+        }
+    </style>
+</head>
+<body>
+    <div class="crime-tape top"></div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <h1>CrimeInsight</h1>
+                <p class="subtitle">A Database Approach to Crime Analysis</p>
+                
+                <div class="team-info">
+                    <h3>Project Team</h3>
+                    <div class="team-member">Aditya Pathania (UE223007)</div>
+                    <div class="team-member">Abhibhav Sharma (UE223004)</div>
+                    <div class="team-member">Anurag Kumar Vig (UE223015)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Project Overview</h2>
+            <p>Our project aims to analyze and gain insights into the most common crimes in India, tracking changes in their total numbers across all states from 2011 to 2020. This comprehensive database project also aims to spread awareness about crime in general, its effects, causes, prevention methods, punishments, and measures taken by the government to curb these crimes.</p>
+        </div>
+
+        <div class="grid">
+            <div class="grid-item">
+                <h4>Types of Crimes Analyzed</h4>
+                <ul>
+                    <li>Violent crime</li>
+                    <li>Property crime</li>
+                    <li>White-collar crime</li>
+                    <li>Organized crime</li>
+                    <li>Consensual or victimless crime</li>
+                </ul>
+            </div>
+            <div class="grid-item">
+                <h4>Specific Crimes Studied</h4>
+                <ul>
+                    <li>Murder</li>
+                    <li>Kidnapping and abduction</li>
+                    <li>Rape</li>
+                    <li>Auto theft</li>
+                    <li>Cyber crime</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Technical Implementation</h2>
+            <h3>Data Processing & Transformation</h3>
+            <p>Our project involved extensive data cleaning, transformation, and analysis to ensure data quality and meaningful insights.</p>
+            
+            <div class="list-grid">
+                <div class="list-item">
+                    <strong>Data Cleaning:</strong> Removal of redundant values, NULL values, and multiple indexes
+                </div>
+                <div class="list-item">
+                    <strong>Normalization:</strong> Standardization and homogeneity of dataset
+                </div>
+                <div class="list-item">
+                    <strong>Data Transformation:</strong> Converting raw data into analyzable formats
+                </div>
+            </div>
+
+            <h3>Technologies & Concepts Used</h3>
+            <div class="concepts-used">
+                <div class="concept-badge">SQL</div>
+                <div class="concept-badge">PL/SQL</div>
+                <div class="concept-badge">Python</div>
+                <div class="concept-badge">DAX</div>
+                <div class="concept-badge">Statistics</div>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Interactive Dashboards</h2>
+            <p>We have created comprehensive dashboards to visualize our crime analysis data using multiple chart types including bar graphs, pie charts, line graphs, geographical maps, and area charts.</p>
+            
+            <div>
+                <a href="https://public.tableau.com/app/profile/abhibhav.sharma/viz/Crime_Analysis_16996126932620/Dashboard1" 
+                   class="dashboard-link" target="_blank">
+                    📊 Interactive Tableau Dashboard
+                </a>
+                <a href="https://github.com/pathaniaaditya5/CrimeInsight" 
+                   class="ppt-download-link" target="_blank">
+                    📥 Download PowerPoint Presentation
+                </a>
+            </div>
+            
+            <div style="margin: 20px; text-align: center;">
+                <img src="Crime_analysis.jpg" alt="PDF Dashboard" 
+                     style="max-width: 100%; height: auto; border: 3px solid #ffeb3b; border-radius: 10px; box-shadow: 0 10px 30px rgba(255, 235, 59, 0.3);">
+            </div>
+        </div>
+
+        <div class="insights-section">
+            <h2>Key Insights & Findings</h2>
+            <div class="insights-list">
+                <div class="insight-item">Uttar Pradesh leads in total murders and kidnappings</div>
+                <div class="insight-item">Madhya Pradesh has the highest number of rape cases</div>
+                <div class="insight-item">Maharashtra tops in auto theft cases</div>
+                <div class="insight-item">Kidnappings in UP alone exceed total southern zone kidnappings</div>
+                <div class="insight-item">Punjab has 4x more kidnappings than Himachal Pradesh</div>
+                <div class="insight-item">Delhi records 5x more auto theft cases than Bihar</div>
+                <div class="insight-item">Kidnapping is more common than rape nationwide</div>
+                <div class="insight-item">MP has more rapes than UP and Bihar combined</div>
+                <div class="insight-item">West Bengal is the 2nd most rape-prone state</div>
+                <div class="insight-item">Crime numbers are increasing with years</div>
+                <div class="insight-item">North zone has equal rape cases as South, West, and UT combined</div>
+                <div class="insight-item">Haryana is more crime-prone than Punjab</div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="grid-item">
+                <h4>Causes of Crime</h4>
+                <ul>
+                    <li>Poverty & Unemployment</li>
+                    <li>Peer pressure & Drugs</li>
+                    <li>Politics & Religion</li>
+                    <li>Social Background</li>
+                    <li>Unequal rights & Unfair system</li>
+                </ul>
+            </div>
+            <div class="grid-item">
+                <h4>Effects of Crime</h4>
+                <ul>
+                    <li>Loss of property & life</li>
+                    <li>Loss of resources & time</li>
+                    <li>Spreading of hate</li>
+                    <li>Breaks morals and ethics</li>
+                    <li>Affects relations & reputation</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="prevention-section">
+            <h2>Crime Prevention Strategies</h2>
+            <div class="list-grid">
+                <div class="list-item">Treat violence as a public health concern</div>
+                <div class="list-item">Localize programmes for targeted intervention</div>
+                <div class="list-item">Focus on crime hotspots</div>
+                <div class="list-item">Avoid repressive policies</div>
+                <div class="list-item">Increase employment opportunities</div>
+                <div class="list-item">Focus on gun control measures</div>
+                <div class="list-item">Learn from historical data</div>
+                <div class="list-item">Consider impact of drugs</div>
+            </div>
+        </div>
+
+        <div class="government-measures">
+            <h2>Government Measures</h2>
+            <div class="list-grid">
+                <div class="list-item">
+                    <strong>Modernization of Police Force:</strong> Advanced technology and training for enhanced efficiency
+                </div>
+                <div class="list-item">
+                    <strong>National Crime Records Bureau (NCRB):</strong> Regular crime statistics and reports
+                </div>
+                <div class="list-item">
+                    <strong>Criminal Law Amendments:</strong> Updated laws for sexual offenses, cybercrimes, and child protection
+                </div>
+                <div class="list-item">
+                    <strong>Technology Integration:</strong> CCTVs, data analytics, and crime mapping
+                </div>
+                <div class="list-item">
+                    <strong>Community Policing:</strong> Enhanced police-community relations
+                </div>
+                <div class="list-item">
+                    <strong>Fast-Track Courts:</strong> Expedited legal processes for heinous crimes
+                </div>
+                <div class="list-item">
+                    <strong>Cybersecurity:</strong> Specialized cybercrime units
+                </div>
+                <div class="list-item">
+                    <strong>Juvenile Justice Reforms:</strong> Balance between rehabilitation and accountability
+                </div>
+            </div>
+        </div>
+
+        <div class="resources-section">
+            <h2>Resources & Software Used</h2>
+            <div class="list-grid">
+                <div class="list-item">
+                    <strong>Kaggle:</strong> Data retrieval and datasets
+                </div>
+                <div class="list-item">
+                    <strong>VSCode:</strong> Python, CSS, and JavaScript development
+                </div>
+                <div class="list-item">
+                    <strong>SQL Workbench:</strong> Database queries and operations
+                </div>
+                <div class="list-item">
+                    <strong>Tableau:</strong> Dashboard creation and visualization
+                </div>
+                <div class="list-item">
+                    <strong>Slidesgo:</strong> Presentation design
+                </div>
+            </div>
+        </div>
+
+        <div class="links-section">
+            <h2>Project Resources</h2>
+            <p>Access our complete project materials and documentation</p>
+            <div>
+                <a href="https://github.com/pathaniaaditya5/CrimeInsight" class="project-link">💻 GitHub Repository</a>
+                <a href="https://public.tableau.com/app/profile/abhibhav.sharma/viz/Crime_Analysis_16996126932620/Dashboard1" 
+                   class="project-link" target="_blank">📊 Live Dashboard</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="crime-tape bottom"></div>
+</body>
+</html>
